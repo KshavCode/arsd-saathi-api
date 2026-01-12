@@ -5,6 +5,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import TimeoutException
+from dotenv import load_dotenv
+import os
 
 
 class ARSDApp:
@@ -32,6 +34,7 @@ class ARSDApp:
         self.chrome_options.add_argument('--disable-logging')
         self.chrome_options.add_argument('--log-level=3')
         self.chrome_options.add_argument('--silent')
+        # self.chrome_options.add_argument('--headless=new')
         self.chrome_options.set_capability("pageLoadStrategy", "eager")
 
         self.driver = webdriver.Chrome(options=self.chrome_options)
@@ -137,9 +140,10 @@ class ARSDApp:
                 pass
     
 def main():
-    rollNo = '23/38046'
-    name = 'Keshav Pal'
-    password = 'AW015'
+    load_dotenv()
+    rollNo = os.getenv('ROLL_NO')
+    name = os.getenv('NAME')
+    password = os.getenv('PASSWORD')
 
     app = ARSDApp(name, rollNo, password)
     app.get_mentor_name()
