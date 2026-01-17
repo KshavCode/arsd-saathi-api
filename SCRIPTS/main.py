@@ -200,9 +200,5 @@ def main():
     app = ARSDApp(name, rollNo, password)
     app.get_basic_details()
 
-# app = ARSDApp("Shivam", "23/38040", "SHIVAM" , headless=False)
-# print(app.get_mentor_name())
-
-
 if __name__ == "__main__":
     main()
