@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function App({ navigation }) {
   const extractData = () => {
-   let data = {"name":"John Doe","attendance":85.43,"year":2,"semester":4};
+   let data = {"name":"John Doe","attendance":68,"year":2,"semester":4};
    return data;
   }
   const data = extractData();
@@ -19,7 +19,11 @@ export default function App({ navigation }) {
         </View>
     
         <View style={{ justifyContent: 'center', gap: 10, flexDirection: 'row', height: 130 }}>
-          <InfoCard title="Attendance %" value={String(data.attendance)} />
+          <InfoCard
+            title="Attendance %"
+            value={`${Number(data.attendance).toFixed(2)}%`}
+            color={Number(data.attendance) < 67 ? Colors.light.error : Colors.light.success}
+          />
           <InfoCard title="Year / Semester" value={`${data.year} / ${data.semester}`} />
         </View>
     
@@ -29,21 +33,21 @@ export default function App({ navigation }) {
         </View>
     
       <View style={{ justifyContent: 'center', gap: 10, marginTop: 20 }}>
-        <TouchableOpacity style={styles.longButtong}>
-          <Text style={styles.buttonText}>View Detailed Attendance</Text>
+        <TouchableOpacity style={styles.longButtong} onPress={() => navigation.navigate("Attendance")}>
           <Ionicons name="bar-chart" color={Colors.light.background} size={18} />
+          <Text style={styles.buttonText}>View Detailed Attendance</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.longButtong}>
-          <Text style={styles.buttonText}>View Personal Details</Text>
+        <TouchableOpacity style={styles.longButtong} onPress={() => navigation.navigate("Details")}>
           <Ionicons name="person" color={Colors.light.background} size={18} />
+          <Text style={styles.buttonText}>View Personal Details</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.longButtong}>
-          <Text style={styles.buttonText}>Check Faculty Details</Text>
+        <TouchableOpacity style={styles.longButtong} onPress={() => navigation.navigate("Faculty")}>
           <Ionicons name="people" color={Colors.light.background} size={18} />
+          <Text style={styles.buttonText}>Check Faculty Details</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.longButtong, {backgroundColor: Colors.light.error}]} onPress={() => navigation.replace('Login')}>
-          <Text style={styles.buttonText}>Logout</Text>
           <Ionicons name="log-out-outline" color={Colors.light.background} size={22} />
+          <Text style={styles.buttonText}>Logout</Text>
         </TouchableOpacity>
       </View>
     
@@ -83,7 +87,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 5
+    gap: 10
   },
   buttonText: {
     color: '#fff',
