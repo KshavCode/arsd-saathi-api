@@ -44,10 +44,10 @@ ArsdSaathi/ios
 ArsdSaathi/android
 
 ArsdSaathi/.vscode
-SCRIPTS/.vscode
+BACKEND/.vscode
 
-SCRIPTS/venv
-SCRIPTS/.env
+BACKEND/venv
+BACKEND/.env
 
 API/venv
 

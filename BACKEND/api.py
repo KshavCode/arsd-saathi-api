@@ -1,23 +1,15 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import Select
-from selenium.common.exceptions import TimeoutException
+from pydantic import BaseModel
+from extract import ARSDApp
+import uuid
 
+# REQUIRE TOKEN FOR AUTHORIZATION IN FUTURE
 
-
-
-
-
-# Reusing the functions and ARSDApp class already written
-import sys
-sys.path.append('..')  
-from SCRIPTS.main import ARSDApp  
-
+class LoginRequest(BaseModel):
+    name: str
+    rollNo: str
+    password: str
 
 app = FastAPI(
     tags = ["FastAPI endpoints for ARSD app"]
@@ -32,29 +24,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def require_token(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Login required")
+    return authorization
 
-@app.post("/api/login")
-def login(data: dict):
+@app.get("/")
+def test():
+    return {"message": "API is working!"}
+
+@app.get("/api/login")
+async def login(name:str, rollno:str, password:str):
+    print("Login attempt for:", name, rollno)
     try:
-        app_instance = ARSDApp(data["name"], data["rollNo"], data["password"], headless=True)
+        app_instance = ARSDApp(name, rollno, password, headless=True)
         success = app_instance.login()
         app_instance.driver.quit()
-        print("LOGIN RESULT FROM CLASS:", success)
-
         if not success:
             return {"success": False, "message": "Invalid credentials"}
-        return {"success": True, "message": "Login successful"}
-    
-            
+        return {"success": True, "token": str(uuid.uuid4()), "message": "Login successful"}
 
     except Exception as e:
         return {"success": False, "message": "Invalid credentials"}
 
 
-
-
-@app.post("/api/get_attendance")
-def get_attendance(data: dict):
+@app.get("/api/get_attendance")
+async def get_attendance(data: dict, token:str = Depends(require_token)):
     try:
         app_instance = ARSDApp(data["name"], data["rollNo"], data["password"], headless=True)
         report_found = app_instance.get_attendance()
@@ -68,8 +63,8 @@ def get_attendance(data: dict):
 
 
 
-@app.post("/api/get_faculty_details")
-def get_faculty_details(data: dict):
+@app.get("/api/get_faculty_details")
+async def get_faculty_details(data: dict):
     
     try:
         app_instance = ARSDApp(data["name"], data["rollNo"], data["password"], headless=True)
@@ -86,8 +81,8 @@ def get_faculty_details(data: dict):
    
 
 
-@app.post("/api/get_mentor_name")
-def get_mentor_name(data: dict):
+@app.get("/api/get_mentor_name")
+async def get_mentor_name(data: dict):
     
     try:
         app_instance = ARSDApp(data["name"], data["rollNo"], data["password"], headless=True)
@@ -102,15 +97,12 @@ def get_mentor_name(data: dict):
         raise HTTPException(status_code=500, detail=str(e))
     
 
+@app.get("/api/get_basic_details")
+async def get_basic_details(data: dict):
 
-@app.post("/api/get_basic_details")
-def get_basic_details(data: dict):
-    
     try:
-        
         app_instance = ARSDApp(data["name"], data["rollNo"], data["password"], headless=True)
         basic_details =  app_instance.get_basic_details()
-        
         
         return {
             "success": True,
@@ -123,4 +115,4 @@ def get_basic_details(data: dict):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
