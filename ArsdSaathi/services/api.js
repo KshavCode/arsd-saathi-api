@@ -1,11 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import axios from 'axios';
+import url from '../secret.js';
 
-import IP_ADD from '../secret';
+// DEPLOY TO RENDER (e.g., https://your-app.onrender.com)
+const BASE_URL = url;
 
-// REPLACE WITH YOUR COMPUTER'S IP
-const BASE_URL = `http://${IP_ADD}`; 
+// MUST MATCH THE PYTHON KEY EXACTLY
+const API_KEY = '2TDlOFQjA6bOcDuiLnirsSS5S9ipEWOFf3R4rjruxjxcs6'; 
 
 const storeData = async (key, value) => {
     try {
@@ -28,27 +30,33 @@ export const clearAllData = async () => {
 export const loginAndFetchAll = async (name, rollNo, dob) => {
     const credentials = { name, rollNo, dob };
     
-    // --- OPTIMIZATION 1: Instant Internet Check ---
     const netInfo = await NetInfo.fetch();
     if (!netInfo.isConnected) {
-        return { success: false, message: "No Internet Connection. Please turn on Wi-Fi or Mobile Data." };
+        return { success: false, message: "No Internet Connection." };
     }
 
-    // --- OPTIMIZATION 2: Fast Server Health Check (Ping) ---
-    // We try to reach the server with a SHORT timeout (3s) first.
-    // If this fails, we know the server is down/wrong IP immediately.
     try {
-        await axios.get(`${BASE_URL}/`, { timeout: 3000 });
+        // Ping check (Fast fail)
+        await axios.get(`${BASE_URL}/`, { timeout: 5000 });
     } catch (error) {
-        console.error("Server Ping Failed:", error);
-        return { success: false, message: "Server is unreachable. Make sure the Python backend is running and the IP is correct." };
+        console.error("Ping Failed", error);
+        return { success: false, message: "Server Unreachable." };
     }
     
-    // --- STEP 3: The Heavy Request (Only runs if Server is ALIVE) ---
     try {
-        console.log("Server is alive. Starting Single-Session Login...");
+        console.log("Starting Login...");
         
-        const response = await axios.post(`${BASE_URL}/api/login`, credentials, { timeout: 60000 });
+        // --- SEND THE SECRET KEY HERE ---
+        const response = await axios.post(
+            `${BASE_URL}/api/login`, 
+            credentials, 
+            { 
+                timeout: 60000,
+                headers: { 
+                    'x-api-key': API_KEY  // <--- The Key
+                }
+            }
+        );
         
         if (!response.data.success) {
             return { success: false, message: response.data.message };
@@ -56,7 +64,6 @@ export const loginAndFetchAll = async (name, rollNo, dob) => {
 
         const allData = response.data.data;
 
-        // Parallel Saving for slight speed boost
         await Promise.all([
             storeData('USER_CREDENTIALS', credentials),
             storeData('AUTH_TOKEN', response.data.token),
@@ -71,18 +78,18 @@ export const loginAndFetchAll = async (name, rollNo, dob) => {
     } catch (error) {
         console.error("API Error:", error);
         
-        let msg = "An unexpected error occurred.";
+        // Handle Rate Limiting Error specifically
+        if (error.response && error.response.status === 429) {
+            return { success: false, message: "Too many login attempts. Please wait 1 minute." };
+        }
         
-        if (error.code === 'ECONNABORTED') {
-            msg = "Request timed out. The college portal is too slow right now.";
-        } else if (error.response) {
-            // Server responded with a status code outside 2xx
-            msg = error.response.data?.detail || "Server Error";
-        } else if (error.request) {
-            // Request was made but no response received
-            msg = "Network Error. Could not connect to backend.";
+        if (error.response && error.response.status === 403) {
+            return { success: false, message: "App Security Error: Invalid API Key." };
         }
 
+        let msg = error.response?.data?.detail || error.message || "Network Error";
+        if (error.code === 'ECONNABORTED') msg = "Request timed out. Portal is slow.";
+        
         return { success: false, message: msg };
     }
 };

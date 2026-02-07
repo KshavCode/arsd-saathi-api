@@ -7,6 +7,8 @@ from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+import os
+from dotenv import load_dotenv
 import time 
 
 class ARSDApp:
@@ -232,10 +234,19 @@ class ARSDApp:
 
     def safe_quit(self):
         try:
-            if hasattr(self, 'driver'): self.driver.quit()
-        except: pass
+            if hasattr(self, 'driver'):
+                self.driver.quit()
+        except:
+            pass
+        # Force kill any lingering chrome processes (Linux/Render specific)
+        try:
+            import os
+            os.system("pkill -f chrome")
+        except:
+            pass
 
 if __name__ == '__main__':
     # Test block
-    app = ARSDApp(name='Keshav Pal', rollNo='23/38046', dob='02-08-2005', headless=False)
+    load_dotenv()
+    app = ARSDApp(name=os.getenv("NAME"), rollNo=os.getenv("ROLL_NO"), dob=os.getenv("DOB"), headless=False)
     print(app.get_all_data())
